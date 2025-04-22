@@ -5,7 +5,7 @@ const baseDefaults: Record<string, any> = {
   address: ethers.zeroPadValue("0x", 20),
   bool: false,
   bytes: "0x",
-  string: "",
+  string: ""
 };
 
 const isNullish = (value: any): boolean => {
@@ -46,31 +46,31 @@ export class DefaultGetter<Types extends EIP712TypeDefinitions> {
       this.defaultValues[name] = defaultValue;
       if (!isNullish(defaultValue)) {
         throw new Error(
-          `Got non-empty value for type ${name} in default generator: ${defaultValue}`,
+          `Got non-empty value for type ${name} in default generator: ${defaultValue}`
         );
       }
     }
   }
 
-  /* eslint-disable no-dupe-class-members */
+   
   static from<Types extends EIP712TypeDefinitions>(
-    types: Types,
+    types: Types
   ): DefaultMap<Types>;
 
   static from<Types extends EIP712TypeDefinitions>(
     types: Types,
-    type: keyof Types,
+    type: keyof Types
   ): any;
 
   static from<Types extends EIP712TypeDefinitions>(
     types: Types,
-    type?: keyof Types,
+    type?: keyof Types
   ): DefaultMap<Types> {
     const { defaultValues } = new DefaultGetter(types);
     if (type) return defaultValues[type];
     return defaultValues;
   }
-  /* eslint-enable no-dupe-class-members */
+   
 
   getDefaultValue(type: string): any {
     if (this.defaultValues[type]) return this.defaultValues[type];
@@ -96,9 +96,9 @@ export class DefaultGetter<Types extends EIP712TypeDefinitions> {
       return fields.reduce(
         (obj, { name, type }) => ({
           ...obj,
-          [name]: this.getDefaultValue(type),
+          [name]: this.getDefaultValue(type)
         }),
-        {},
+        {}
       );
     }
 

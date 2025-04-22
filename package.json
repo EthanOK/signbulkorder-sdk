@@ -5,16 +5,16 @@
   "types": "dist/index.d.ts",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/EthanOK/ethan-demo-sdk.git"
+    "url": "git+https://github.com/EthanOK/signbulkorder-sdk.git"
   },
-  "homepage": "https://github.com/EthanOK/ethan-demo-sdk",
+  "homepage": "https://github.com/EthanOK/signbulkorder-sdk",
   "keywords": [
     "typescript",
     "sdk"
   ],
   "author": "ethan",
   "license": "MIT",
-  "description": "This is a demo for typescript sdk",
+  "description": "This is a sign bulk order sdk base seaport",
   "files": [
     "dist"
   ],

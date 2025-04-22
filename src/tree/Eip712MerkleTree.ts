@@ -3,7 +3,7 @@ import {
   AbiCoder,
   keccak256,
   toUtf8Bytes,
-  concat,
+  concat
 } from "ethers";
 import { MerkleTree } from "merkletreejs";
 
@@ -14,7 +14,7 @@ import {
   chunk,
   fillArray,
   getRoot,
-  hexToBuffer,
+  hexToBuffer
 } from "./utils";
 
 import type { EIP712TypeDefinitions } from "./defaults";
@@ -28,18 +28,18 @@ const getTree = (leaves: string[], defaultLeafHash: string) =>
     complete: true,
     sort: false,
     hashLeaves: false,
-    fillDefaultHash: hexToBuffer(defaultLeafHash),
+    fillDefaultHash: hexToBuffer(defaultLeafHash)
   });
 
 const encodeProof = (
   key: number,
   proof: string[],
-  signature = `0x${"ff".repeat(64)}`,
+  signature = `0x${"ff".repeat(64)}`
 ) => {
   return concat([
     signature,
     `0x${key.toString(16).padStart(6, "0")}`,
-    AbiCoder.defaultAbiCoder().encode([`uint256[${proof.length}]`], [proof]),
+    AbiCoder.defaultAbiCoder().encode([`uint256[${proof.length}]`], [proof])
   ]);
 };
 
@@ -97,12 +97,12 @@ export class Eip712MerkleTree<BaseType extends Record<string, any> = any> {
 
   getBulkOrderHash() {
     const structHash = this.encoder.hashStruct("BulkOrder", {
-      tree: this.getDataToSign(),
+      tree: this.getDataToSign()
     });
     const leaves = this.getCompleteLeaves().map(hexToBuffer);
     const rootHash = bufferToHex(getRoot(leaves, false));
     const typeHash = keccak256(
-      toUtf8Bytes(this.encoder.types.BulkOrder[0].type),
+      toUtf8Bytes(this.encoder.types.BulkOrder[0].type)
     );
     const bulkOrderHash = keccak256(concat([typeHash, rootHash]));
 
@@ -118,7 +118,7 @@ export class Eip712MerkleTree<BaseType extends Record<string, any> = any> {
     public rootType: string,
     public leafType: string,
     public elements: BaseType[],
-    public depth: number,
+    public depth: number
   ) {
     const encoder = TypedDataEncoder.from(types);
     this.encoder = encoder;
