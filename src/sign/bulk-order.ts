@@ -1,4 +1,5 @@
-import { Signature, Signer, TypedDataDomain } from "ethers";
+import { Signature, Signer as SignerV6, TypedDataDomain } from "ethers";
+import { VoidSigner as SignerV5 } from "ethers-v5";
 import { getBulkOrderTree } from "../tree/utils";
 import { EIP712TypeDefinitions } from "../tree/defaults";
 
@@ -34,10 +35,10 @@ export const EIP_712_BULK_ORDER_TYPE_DEMO = {
   ]
 };
 export class BulkOrder {
-  private signer: Signer;
+  private signer: SignerV6 | SignerV5;
   private domainData: TypedDataDomain;
 
-  constructor(signer: Signer, domainData: TypedDataDomain) {
+  constructor(signer: SignerV6 | SignerV5, domainData: TypedDataDomain) {
     this.signer = signer;
     this.domainData = domainData;
   }
@@ -77,11 +78,20 @@ export class BulkOrder {
     //   )
     // );
 
-    let signature = await signer.signTypedData(
-      domainData,
-      bulkOrderType,
-      value
-    );
+    let signature;
+    if ("signTypedData" in signer) {
+      signature = await (signer as SignerV6).signTypedData(
+        domainData,
+        bulkOrderType,
+        value
+      );
+    } else {
+      signature = await (signer as SignerV5)._signTypedData(
+        domainData,
+        bulkOrderType,
+        value
+      );
+    }
 
     // Use EIP-2098 compact signatures to save gas.
     if (signature.length === 132) {
