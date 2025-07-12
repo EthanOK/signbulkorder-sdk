@@ -52,7 +52,6 @@ export class DefaultGetter<Types extends EIP712TypeDefinitions> {
     }
   }
 
-   
   static from<Types extends EIP712TypeDefinitions>(
     types: Types
   ): DefaultMap<Types>;
@@ -70,7 +69,6 @@ export class DefaultGetter<Types extends EIP712TypeDefinitions> {
     if (type) return defaultValues[type];
     return defaultValues;
   }
-   
 
   getDefaultValue(type: string): any {
     if (this.defaultValues[type]) return this.defaultValues[type];

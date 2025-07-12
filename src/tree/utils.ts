@@ -17,13 +17,14 @@ export function getBulkOrderTree(
   startIndex = 0,
   height = getBulkOrderTreeHeight(orderComponents.length + startIndex)
 ) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { BulkOrder, ...ORDER_TYPE } = EIP_712_BULK_ORDER_TYPE;
-  const primaryType_bulk_order = TypedDataEncoder.getPrimaryType(
-    EIP_712_BULK_ORDER_TYPE
-  );
   const primaryType = TypedDataEncoder.getPrimaryType(ORDER_TYPE);
-  console.log("bulk order primaryType:", primaryType_bulk_order);
-  console.log("order primaryType:", primaryType);
+  // const primaryType_bulk_order = TypedDataEncoder.getPrimaryType(
+  //   EIP_712_BULK_ORDER_TYPE
+  // );
+  // console.log("bulk order primaryType:", primaryType_bulk_order);
+  // console.log("order primaryType:", primaryType);
   const types = getBulkOrderTypes(height, EIP_712_BULK_ORDER_TYPE, primaryType);
   const defaultNode = DefaultGetter.from(types, primaryType);
   let elements = [...orderComponents];
