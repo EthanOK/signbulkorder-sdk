@@ -23,7 +23,7 @@ describe("Test Opensea BulkOrder", () => {
     };
     // console.log(domainData);
 
-    const orders = getOpenseaOrdersList();
+    const orders = getOpenseaOrdersList(signer.address);
 
     const EIP_712_BULK_ORDER_TYPE = EIP_712_BULK_ORDER_TYPE_DEMO;
 
@@ -84,7 +84,7 @@ describe("Test Opensea BulkOrder", () => {
       verifyingContract: "0x0000000000000068F116a894984e2DB1123eB395"
     };
 
-    const orders = getOpenseaOrdersList();
+    const orders = getOpenseaOrdersList(signer.address);
 
     const bulkOrder = new BulkOrder(signer as any, domainData);
     const ordersWithSignature = await bulkOrder.signBulkOrder(

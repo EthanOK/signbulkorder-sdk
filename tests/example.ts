@@ -1,8 +1,8 @@
-export const getOpenseaOrdersList = () => {
+export const getOpenseaOrdersList = (offerer: string, recipient?: string) => {
   const orders = [];
   for (let i = 1; i <= 3; i++) {
     const order = {
-      offerer: "0x6278A1E803A76796a3A1f7F6344fE874ebfe94B2",
+      offerer: offerer,
       zone: "0x004C00500000aD104D7DBd00e3ae0A5C00560C00",
       offer: [
         {
@@ -20,7 +20,7 @@ export const getOpenseaOrdersList = () => {
           identifierOrCriteria: BigInt("0"),
           startAmount: BigInt("1082250000000000000"),
           endAmount: BigInt("1082250000000000000"),
-          recipient: "0x6278A1E803A76796a3A1f7F6344fE874ebfe94B2"
+          recipient: recipient || offerer
         },
         {
           itemType: 0,

@@ -20,10 +20,10 @@
   ],
   "dependencies": {
     "@ethersproject/bignumber": "5.8.0",
-    "@opensea/seaport-js": "^4.0.4",
-    "ethers": "^6.13.4",
+    "@opensea/seaport-js": "^4.0.6",
+    "ethers": "^6.16.0",
     "ethers-v5": "npm:ethers@^5.8.0",
-    "merkletreejs": "^0.5.2"
+    "merkletreejs": "^0.6.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.16.0",
@@ -38,6 +38,7 @@
     "lint-staged": "^15.2.10",
     "mocha": "^9.2.2",
     "prettier": "^3.3.3",
+    "standard-version": "^9.5.0",
     "ts-mocha": "^10.0.0",
     "tsup": "^8.3.5",
     "typedoc": "^0.26.11",
@@ -55,7 +56,7 @@
     "prettier": "prettier --write \"{src,tests}/**/*.{js,ts,tsx,json,css,md}\"",
     "typedoc": "typedoc src/index.ts",
     "build": "tsup ./src/index.ts --format esm,cjs --dts",
-    "link": "npm link && npm link ts-sdk-demo",
+    "release": "standard-version",
     "publish": "npm publish",
     "lint": "eslint \"{src,tests}/**/*.{js,ts,tsx}\"",
     "lint:fix": "eslint \"{src,tests}/**/*.{js,ts,tsx}\" --fix",
