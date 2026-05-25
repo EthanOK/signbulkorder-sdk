@@ -1,11 +1,11 @@
-# signbulkorder-sdk
+# bulkorder-sdk
 
-EIP-712 order signing SDK. Supports single orders, bulk Merkle orders, custom EIP-712 schemas, and OpenSea Seaport. Compatible with ethers v5 and v6.
+EIP-712 bulk order sign and verify SDK. Supports single orders, bulk Merkle orders, custom EIP-712 schemas, and OpenSea Seaport. Compatible with ethers v5 and v6.
 
 ## Install
 
 ```bash
-npm install signbulkorder-sdk
+npm install bulkorder-sdk
 ```
 
 ## API
@@ -16,26 +16,26 @@ import {
   EIP_712_BULK_ORDER_TYPE_DEMO,
   Order,
   OrderParameters
-} from "signbulkorder-sdk";
+} from "bulkorder-sdk";
 ```
 
-| Export | Description |
-| --- | --- |
-| `BulkOrder<T>` | Order signer and verifier |
-| `Order<T>` | Signed order: `{ parameters, signature }` |
-| `OrderParameters` | Base constraint for order fields (`Record<string, unknown>`) |
-| `EIP_712_BULK_ORDER_TYPE_DEMO` | Prebuilt EIP-712 types for OpenSea Seaport bulk orders |
+| Export                         | Description                                                  |
+| ------------------------------ | ------------------------------------------------------------ |
+| `BulkOrder<T>`                 | Order signer and verifier                                    |
+| `Order<T>`                     | Signed order: `{ parameters, signature }`                    |
+| `OrderParameters`              | Base constraint for order fields (`Record<string, unknown>`) |
+| `EIP_712_BULK_ORDER_TYPE_DEMO` | Prebuilt EIP-712 types for OpenSea Seaport bulk orders       |
 
 ### Constructor
 
 ```ts
-new BulkOrder(signer, domainData, eip712BulkOrderType)
+new BulkOrder(signer, domainData, eip712BulkOrderType);
 ```
 
-| Parameter | Description |
-| --- | --- |
-| `signer` | ethers v5 or v6 signer |
-| `domainData` | EIP-712 domain (`name`, `version`, `chainId`, `verifyingContract`) |
+| Parameter             | Description                                                                       |
+| --------------------- | --------------------------------------------------------------------------------- |
+| `signer`              | ethers v5 or v6 signer                                                            |
+| `domainData`          | EIP-712 domain (`name`, `version`, `chainId`, `verifyingContract`)                |
 | `eip712BulkOrderType` | Full EIP-712 types including `BulkOrder` and leaf struct (e.g. `OrderComponents`) |
 
 The `BulkOrder` type in `eip712BulkOrderType` is only used by `signBulkOrder`. `signOrder` uses the remaining leaf types.
@@ -47,9 +47,9 @@ signOrder(orderComponents: T): Promise<Order<T>>
 signBulkOrder(orderComponents: T[]): Promise<Order<T>[]>
 ```
 
-| Method | Signature format |
-| --- | --- |
-| `signOrder` | Standard EIP-712, 64-byte compact or 65-byte ECDSA |
+| Method          | Signature format                                     |
+| --------------- | ---------------------------------------------------- |
+| `signOrder`     | Standard EIP-712, 64-byte compact or 65-byte ECDSA   |
 | `signBulkOrder` | Bulk ECDSA + 3-byte index + Merkle proof (per order) |
 
 ### Verify
@@ -74,7 +74,7 @@ Each order is verified independently. Bulk and normal signatures are detected au
 ## Custom EIP-712
 
 ```ts
-import { BulkOrder } from "signbulkorder-sdk";
+import { BulkOrder } from "bulkorder-sdk";
 import { hashMessage, JsonRpcProvider, Wallet } from "ethers";
 
 type CustomOrderComponents = {
@@ -103,11 +103,14 @@ const domainData = {
   verifyingContract: "0x0000000000000068F116a894984e2DB1123eB395"
 };
 
-const orderComponents: CustomOrderComponents[] = Array.from({ length: 3 }, (_, i) => ({
-  number: i + 1,
-  message: hashMessage(String(i + 1)),
-  account: signer.address
-}));
+const orderComponents: CustomOrderComponents[] = Array.from(
+  { length: 3 },
+  (_, i) => ({
+    number: i + 1,
+    message: hashMessage(String(i + 1)),
+    account: signer.address
+  })
+);
 
 const bulkOrder = new BulkOrder<CustomOrderComponents>(
   signer,
@@ -129,7 +132,7 @@ Pass `BulkOrder<T>` generic when you want typed `parameters` on the result.
 ## OpenSea Seaport
 
 ```ts
-import { BulkOrder, EIP_712_BULK_ORDER_TYPE_DEMO } from "signbulkorder-sdk";
+import { BulkOrder, EIP_712_BULK_ORDER_TYPE_DEMO } from "bulkorder-sdk";
 import { JsonRpcProvider, Wallet } from "ethers";
 
 const privateKey = process.env.PRIVATE_KEY as string;
@@ -178,7 +181,11 @@ const orderComponents = [
   }
 ];
 
-const bulkOrder = new BulkOrder(signer, domainData, EIP_712_BULK_ORDER_TYPE_DEMO);
+const bulkOrder = new BulkOrder(
+  signer,
+  domainData,
+  EIP_712_BULK_ORDER_TYPE_DEMO
+);
 
 const bulkOrders = await bulkOrder.signBulkOrder(orderComponents);
 await bulkOrder.verifyOrders(bulkOrders, signer.address);
@@ -205,8 +212,12 @@ export const EIP_712_BULK_ORDER_TYPE_DEMO = {
     { name: "conduitKey", type: "bytes32" },
     { name: "counter", type: "uint256" }
   ],
-  OfferItem: [ /* ... */ ],
-  ConsiderationItem: [ /* ... */ ]
+  OfferItem: [
+    /* ... */
+  ],
+  ConsiderationItem: [
+    /* ... */
+  ]
 };
 ```
 

@@ -1,20 +1,20 @@
 {
-  "name": "signbulkorder-sdk",
+  "name": "bulkorder-sdk",
   "version": "0.0.4",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/EthanOK/signbulkorder-sdk.git"
+    "url": "git+https://github.com/EthanOK/bulkorder-sdk.git"
   },
-  "homepage": "https://github.com/EthanOK/signbulkorder-sdk",
+  "homepage": "https://github.com/EthanOK/bulkorder-sdk",
   "keywords": [
     "typescript",
     "sdk"
   ],
   "author": "ethan",
   "license": "MIT",
-  "description": "This is a sign bulk order sdk base seaport",
+  "description": "EIP-712 SDK to sign and verify single and bulk Merkle orders with custom schemas; OpenSea Seaport compatible; ethers v5 and v6",
   "files": [
     "dist"
   ],
