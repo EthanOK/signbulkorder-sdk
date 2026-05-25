@@ -1,4 +1,11 @@
-export const getOpenseaOrdersList = (offerer: string, recipient?: string) => {
+import { OrderComponents } from "@opensea/seaport-js/lib/types";
+
+export type SeaportOrderComponents = OrderComponents;
+
+export const getOpenseaOrdersList = (
+  offerer: string,
+  recipient?: string
+): SeaportOrderComponents[] => {
   const orders = [];
   for (let i = 1; i <= 3; i++) {
     const order = {

@@ -3,7 +3,8 @@ import {
   AbiCoder,
   keccak256,
   toUtf8Bytes,
-  concat
+  concat,
+  toBeHex
 } from "ethers";
 import { MerkleTree } from "merkletreejs";
 
@@ -41,6 +42,50 @@ const encodeProof = (
     `0x${key.toString(16).padStart(6, "0")}`,
     AbiCoder.defaultAbiCoder().encode([`uint256[${proof.length}]`], [proof])
   ]);
+};
+
+export const isBulkOrderSignature = (signature: string): boolean => {
+  const byteLength =
+    (signature.startsWith("0x") ? signature.slice(2) : signature).length / 2;
+
+  // Seaport bulk signature: 64/65-byte ECDSA + 3-byte index + 32-byte proof elements
+  if (byteLength < 99 || byteLength > 836) {
+    return false;
+  }
+
+  return (byteLength - 67) % 32 === 0;
+};
+
+export const decodeEncodedBulkOrderSignature = (encoded: string) => {
+  const hex = encoded.startsWith("0x") ? encoded.slice(2) : encoded;
+  const totalLen = hex.length / 2;
+
+  for (const sigBytes of [64, 65]) {
+    const proofBytes = totalLen - sigBytes - 3;
+    if (proofBytes <= 0 || proofBytes % 32 !== 0) continue;
+
+    const proofLen = proofBytes / 32;
+    const sigHex = hex.slice(0, sigBytes * 2);
+    const key = parseInt(hex.slice(sigBytes * 2, sigBytes * 2 + 6), 16);
+    const proofHex = "0x" + hex.slice(sigBytes * 2 + 6);
+
+    try {
+      const decoded = AbiCoder.defaultAbiCoder().decode(
+        [`uint256[${proofLen}]`],
+        proofHex
+      )[0] as bigint[];
+      const proof = decoded.map((p) => toBeHex(p, 32));
+      return {
+        signature: "0x" + sigHex,
+        key,
+        proof
+      };
+    } catch {
+      continue;
+    }
+  }
+
+  throw new Error("invalid encoded bulk order signature");
 };
 
 export class Eip712MerkleTree<BaseType extends Record<string, any> = any> {

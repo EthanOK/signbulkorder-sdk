@@ -1,8 +1,10 @@
 import {
   BytesLike,
   concat,
+  id,
   keccak256,
   toBeHex,
+  TypedDataDomain,
   TypedDataEncoder,
   TypedDataField
 } from "ethers";
@@ -66,6 +68,8 @@ function getBulkOrderTypes(
   return types;
 }
 
+export { getBulkOrderTypes };
+
 export const bufferKeccak = (value: BytesLike) => hexToBuffer(keccak256(value));
 
 export const makeArray = <T>(len: number, getValue: (i: number) => T) =>
@@ -79,12 +83,72 @@ export const chunk = <T>(array: T[], size: number) => {
   );
 };
 
-export const bufferToHex = (buf: Buffer) => toBeHex(buf.toString("hex"));
+export const bufferToHex = (buf: Buffer) => `0x${buf.toString("hex")}`;
 
 export const hexToBuffer = (value: string) =>
   Buffer.from(value.slice(2), "hex");
 
 export const hashConcat = (arr: BytesLike[]) => bufferKeccak(concat(arr));
+
+export const verifyMerkleProof = (
+  leaf: string,
+  proof: string[],
+  root: string,
+  leafIndex: number
+): boolean => {
+  let hash = hexToBuffer(leaf);
+  let index = leafIndex;
+
+  for (const proofElement of proof) {
+    const sibling = hexToBuffer(proofElement);
+    const isRightNode = index % 2 === 1;
+    hash = hashConcat(isRightNode ? [sibling, hash] : [hash, sibling]);
+    index = Math.floor(index / 2);
+  }
+
+  return Buffer.compare(hash, hexToBuffer(root)) === 0;
+};
+
+export const computeMerkleRoot = (
+  leaf: string,
+  proof: string[],
+  leafIndex: number
+): string => {
+  let hash = hexToBuffer(leaf);
+  let index = leafIndex;
+
+  for (const proofElement of proof) {
+    const sibling = hexToBuffer(proofElement);
+    const isRightNode = index % 2 === 1;
+    hash = hashConcat(isRightNode ? [sibling, hash] : [hash, sibling]);
+    index = Math.floor(index / 2);
+  }
+
+  return `0x${hash.toString("hex")}`;
+};
+
+export const computeBulkOrderHash = (
+  leaf: string,
+  proof: string[],
+  key: number,
+  bulkOrderTypes: EIP712TypeDefinitions
+): string => {
+  const root = computeMerkleRoot(leaf, proof, key);
+  const typeHash = id(
+    TypedDataEncoder.from(bulkOrderTypes).encodeType("BulkOrder")
+  );
+
+  return keccak256(concat([typeHash, root]));
+};
+
+export const deriveEIP712Digest = (
+  domain: TypedDataDomain,
+  structHash: string
+): string => {
+  const domainSeparator = TypedDataEncoder.hashDomain(domain);
+
+  return keccak256(concat(["0x1901", domainSeparator, structHash]));
+};
 
 export const getRoot = (elements: (Buffer | string)[], hashLeaves = true) => {
   if (elements.length === 0) throw new Error("empty tree");

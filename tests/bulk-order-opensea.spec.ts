@@ -1,15 +1,15 @@
 import { BulkOrder, EIP_712_BULK_ORDER_TYPE_DEMO } from "../src";
-import { JsonRpcProvider, Wallet } from "ethers";
+import { JsonRpcProvider, Wallet, ZeroAddress } from "ethers";
 import { providers, Wallet as WalletV5 } from "ethers-v5";
 import "dotenv/config";
 import { Seaport } from "@opensea/seaport-js";
-import { Order } from "@opensea/seaport-js/lib/types";
-import { getOpenseaOrdersList } from "./example";
+import { Order, OrderComponents } from "@opensea/seaport-js/lib/types";
+import { getOpenseaOrdersList, SeaportOrderComponents } from "./example";
 import { equal } from "assert";
 
 describe("Test Opensea BulkOrder", () => {
   let signature_0 = "";
-  it("Sign Bulk Order base ethersv6", async () => {
+  it("Sign and Verify Bulk Order base ethersv6", async () => {
     const privateKey = process.env.PRIVATE_KEY as string;
     const provider = new JsonRpcProvider("https://1rpc.io/eth");
     const signer = new Wallet(privateKey, provider);
@@ -23,25 +23,26 @@ describe("Test Opensea BulkOrder", () => {
     };
     // console.log(domainData);
 
-    const orders = getOpenseaOrdersList(signer.address);
+    const orderComponents = getOpenseaOrdersList(signer.address);
 
-    const EIP_712_BULK_ORDER_TYPE = EIP_712_BULK_ORDER_TYPE_DEMO;
-
-    const bulkOrder = new BulkOrder(signer, domainData);
-    const ordersWithSignature = await bulkOrder.signBulkOrder(
-      orders,
-      EIP_712_BULK_ORDER_TYPE
+    const bulkOrder = new BulkOrder<SeaportOrderComponents>(
+      signer,
+      domainData,
+      EIP_712_BULK_ORDER_TYPE_DEMO
     );
+    const ordersWithSignature = await bulkOrder.signBulkOrder(orderComponents);
 
     // console.log(ordersWithSignature)
 
     // validate ordersWithSignature
-    const ordersWithSignature_opensea = await seaport.signBulkOrder(orders);
-
-    equal(
-      ordersWithSignature[0].signature,
-      ordersWithSignature_opensea[0].signature
+    const ordersWithSignature_opensea = await seaport.signBulkOrder(
+      orderComponents as unknown as OrderComponents[]
     );
+
+    ordersWithSignature.forEach((order, index) => {
+      equal(order.signature, ordersWithSignature_opensea[index].signature);
+    });
+
     signature_0 = ordersWithSignature[0].signature;
 
     const ordersWithSignature_ = [];
@@ -67,12 +68,21 @@ describe("Test Opensea BulkOrder", () => {
       ordersWithSignature_.push(order_);
     }
 
-    const isValid = await seaport.validate(ordersWithSignature_).staticCall();
+    const isValid_seaport = await seaport
+      .validate(ordersWithSignature_)
+      .staticCall();
 
-    console.log("isValid", isValid);
+    equal(isValid_seaport, true);
+
+    const isValid_bulkOrder = await bulkOrder.verifyOrders(
+      ordersWithSignature,
+      signer.address
+    );
+
+    equal(isValid_bulkOrder, true);
   });
 
-  it("Sign Bulk Order base ethersv5", async () => {
+  it("Sign and Verify Bulk Order base ethersv5", async () => {
     const privateKey = process.env.PRIVATE_KEY as string;
     const provider = new providers.JsonRpcProvider("https://1rpc.io/eth");
     const signer = new WalletV5(privateKey, provider);
@@ -86,12 +96,27 @@ describe("Test Opensea BulkOrder", () => {
 
     const orders = getOpenseaOrdersList(signer.address);
 
-    const bulkOrder = new BulkOrder(signer as any, domainData);
-    const ordersWithSignature = await bulkOrder.signBulkOrder(
-      orders,
+    const bulkOrder = new BulkOrder<SeaportOrderComponents>(
+      signer as any,
+      domainData,
       EIP_712_BULK_ORDER_TYPE_DEMO
     );
+    const ordersWithSignature = await bulkOrder.signBulkOrder(orders);
 
     equal(ordersWithSignature[0].signature, signature_0);
+
+    const isValid_bulkOrder = await bulkOrder.verifyOrders(
+      ordersWithSignature,
+      signer.address
+    );
+    equal(isValid_bulkOrder, true);
+
+    const isInvalid_bulkOrder = await bulkOrder.verifyOrders(
+      ordersWithSignature,
+      ZeroAddress
+    );
+    equal(isInvalid_bulkOrder, false);
   });
 });
+
+// yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/bulk-order-opensea.spec.ts
