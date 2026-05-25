@@ -1,5 +1,5 @@
 import { BulkOrder, EIP_712_BULK_ORDER_TYPE_DEMO } from "../src";
-import { JsonRpcProvider, Wallet } from "ethers";
+import { JsonRpcProvider, Wallet, ZeroAddress } from "ethers";
 import { providers, Wallet as WalletV5 } from "ethers-v5";
 import "dotenv/config";
 import { Seaport } from "@opensea/seaport-js";
@@ -9,7 +9,7 @@ import { equal } from "assert";
 
 describe("Test Opensea BulkOrder", () => {
   let signature_0 = "";
-  it("Sign Bulk Order base ethersv6", async () => {
+  it("Sign and Verify Bulk Order base ethersv6", async () => {
     const privateKey = process.env.PRIVATE_KEY as string;
     const provider = new JsonRpcProvider("https://1rpc.io/eth");
     const signer = new Wallet(privateKey, provider);
@@ -39,10 +39,10 @@ describe("Test Opensea BulkOrder", () => {
       orderComponents as unknown as OrderComponents[]
     );
 
-    equal(
-      ordersWithSignature[0].signature,
-      ordersWithSignature_opensea[0].signature
-    );
+    ordersWithSignature.forEach((order, index) => {
+      equal(order.signature, ordersWithSignature_opensea[index].signature);
+    });
+
     signature_0 = ordersWithSignature[0].signature;
 
     const ordersWithSignature_ = [];
@@ -68,12 +68,21 @@ describe("Test Opensea BulkOrder", () => {
       ordersWithSignature_.push(order_);
     }
 
-    const isValid = await seaport.validate(ordersWithSignature_).staticCall();
+    const isValid_seaport = await seaport
+      .validate(ordersWithSignature_)
+      .staticCall();
 
-    console.log("isValid", isValid);
+    equal(isValid_seaport, true);
+
+    const isValid_bulkOrder = await bulkOrder.verifyOrders(
+      ordersWithSignature,
+      signer.address
+    );
+
+    equal(isValid_bulkOrder, true);
   });
 
-  it("Sign Bulk Order base ethersv5", async () => {
+  it("Sign and Verify Bulk Order base ethersv5", async () => {
     const privateKey = process.env.PRIVATE_KEY as string;
     const provider = new providers.JsonRpcProvider("https://1rpc.io/eth");
     const signer = new WalletV5(privateKey, provider);
@@ -95,6 +104,18 @@ describe("Test Opensea BulkOrder", () => {
     const ordersWithSignature = await bulkOrder.signBulkOrder(orders);
 
     equal(ordersWithSignature[0].signature, signature_0);
+
+    const isValid_bulkOrder = await bulkOrder.verifyOrders(
+      ordersWithSignature,
+      signer.address
+    );
+    equal(isValid_bulkOrder, true);
+
+    const isInvalid_bulkOrder = await bulkOrder.verifyOrders(
+      ordersWithSignature,
+      ZeroAddress
+    );
+    equal(isInvalid_bulkOrder, false);
   });
 });
 

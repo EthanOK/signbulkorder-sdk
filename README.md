@@ -1,6 +1,6 @@
 # signbulkorder-sdk
 
-EIP-712 bulk order signing SDK. Supports custom EIP-712 schemas and OpenSea Seaport bulk orders. Compatible with ethers v5 and v6.
+EIP-712 order signing SDK. Supports single orders, bulk Merkle orders, custom EIP-712 schemas, and OpenSea Seaport. Compatible with ethers v5 and v6.
 
 ## Install
 
@@ -21,7 +21,7 @@ import {
 
 | Export | Description |
 | --- | --- |
-| `BulkOrder<T>` | Bulk order signer |
+| `BulkOrder<T>` | Order signer and verifier |
 | `Order<T>` | Signed order: `{ parameters, signature }` |
 | `OrderParameters` | Base constraint for order fields (`Record<string, unknown>`) |
 | `EIP_712_BULK_ORDER_TYPE_DEMO` | Prebuilt EIP-712 types for OpenSea Seaport bulk orders |
@@ -32,22 +32,46 @@ import {
 new BulkOrder(signer, domainData, eip712BulkOrderType)
 ```
 
-- `signer` — ethers v5 or v6 signer
-- `domainData` — EIP-712 domain (name, version, chainId, verifyingContract)
-- `eip712BulkOrderType` — EIP-712 type definitions for your bulk order schema
+| Parameter | Description |
+| --- | --- |
+| `signer` | ethers v5 or v6 signer |
+| `domainData` | EIP-712 domain (`name`, `version`, `chainId`, `verifyingContract`) |
+| `eip712BulkOrderType` | Full EIP-712 types including `BulkOrder` and leaf struct (e.g. `OrderComponents`) |
 
-### Methods
+The `BulkOrder` type in `eip712BulkOrderType` is only used by `signBulkOrder`. `signOrder` uses the remaining leaf types.
+
+### Sign
 
 ```ts
+signOrder(orderComponents: T): Promise<Order<T>>
 signBulkOrder(orderComponents: T[]): Promise<Order<T>[]>
-verifyBulkOrder(orders: Order<T>[]): Promise<void> // TODO
 ```
 
-`eip712BulkOrderType` is configured once in the constructor. `signBulkOrder` only receives the order list.
+| Method | Signature format |
+| --- | --- |
+| `signOrder` | Standard EIP-712, 64-byte compact or 65-byte ECDSA |
+| `signBulkOrder` | Bulk ECDSA + 3-byte index + Merkle proof (per order) |
+
+### Verify
+
+```ts
+verifyOrder(order: Order<T>, accountAddress: string): Promise<boolean>
+verifyOrders(orders: Order<T>[], accountAddress: string): Promise<boolean>
+verifyBulkOrder(orders: Order<T>[], accountAddress: string): Promise<boolean> // alias of verifyOrders
+```
+
+`accountAddress` is required — the expected signer address (on-chain this is `order.parameters.offerer`).
+
+Verification follows the on-chain `validateSignature` flow:
+
+1. `orderHash = hashOrderComponents(parameters)`
+2. If bulk signature (`isBulkOrderSignature`) → decode signature, recompute hash via Merkle proof (`_computeBulkOrderProof`)
+3. `digest = keccak256(0x1901 ‖ domainSeparator ‖ orderHash)`
+4. Recover signer from ECDSA and compare with `accountAddress`
+
+Each order is verified independently. Bulk and normal signatures are detected automatically by signature length.
 
 ## Custom EIP-712
-
-Define your own `OrderComponents` schema and pass matching order objects:
 
 ```ts
 import { BulkOrder } from "signbulkorder-sdk";
@@ -91,15 +115,18 @@ const bulkOrder = new BulkOrder<CustomOrderComponents>(
   EIP_712_BULK_ORDER_TYPE
 );
 
-const ordersWithSignature = await bulkOrder.signBulkOrder(orderComponents);
-console.log(ordersWithSignature);
+// Bulk sign
+const bulkOrders = await bulkOrder.signBulkOrder(orderComponents);
+await bulkOrder.verifyOrders(bulkOrders, signer.address);
+
+// Single sign
+const singleOrder = await bulkOrder.signOrder(orderComponents[0]);
+await bulkOrder.verifyOrder(singleOrder, signer.address);
 ```
 
-Pass a generic type parameter to `BulkOrder<T>` when you want typed `parameters` on the result. Without it, fields default to `Record<string, unknown>`.
+Pass `BulkOrder<T>` generic when you want typed `parameters` on the result.
 
 ## OpenSea Seaport
-
-Use the built-in `EIP_712_BULK_ORDER_TYPE_DEMO` for Seaport bulk orders:
 
 ```ts
 import { BulkOrder, EIP_712_BULK_ORDER_TYPE_DEMO } from "signbulkorder-sdk";
@@ -151,17 +178,16 @@ const orderComponents = [
   }
 ];
 
-const bulkOrder = new BulkOrder(
-  signer,
-  domainData,
-  EIP_712_BULK_ORDER_TYPE_DEMO
-);
+const bulkOrder = new BulkOrder(signer, domainData, EIP_712_BULK_ORDER_TYPE_DEMO);
 
-const ordersWithSignature = await bulkOrder.signBulkOrder(orderComponents);
-console.log(ordersWithSignature);
+const bulkOrders = await bulkOrder.signBulkOrder(orderComponents);
+await bulkOrder.verifyOrders(bulkOrders, signer.address);
+
+const singleOrder = await bulkOrder.signOrder(orderComponents[0]);
+await bulkOrder.verifyOrder(singleOrder, orderComponents[0].offerer);
 ```
 
-`EIP_712_BULK_ORDER_TYPE_DEMO` includes these EIP-712 types:
+`EIP_712_BULK_ORDER_TYPE_DEMO` type definitions:
 
 ```ts
 export const EIP_712_BULK_ORDER_TYPE_DEMO = {
@@ -179,25 +205,12 @@ export const EIP_712_BULK_ORDER_TYPE_DEMO = {
     { name: "conduitKey", type: "bytes32" },
     { name: "counter", type: "uint256" }
   ],
-  OfferItem: [
-    { name: "itemType", type: "uint8" },
-    { name: "token", type: "address" },
-    { name: "identifierOrCriteria", type: "uint256" },
-    { name: "startAmount", type: "uint256" },
-    { name: "endAmount", type: "uint256" }
-  ],
-  ConsiderationItem: [
-    { name: "itemType", type: "uint8" },
-    { name: "token", type: "address" },
-    { name: "identifierOrCriteria", type: "uint256" },
-    { name: "startAmount", type: "uint256" },
-    { name: "endAmount", type: "uint256" },
-    { name: "recipient", type: "address" }
-  ]
+  OfferItem: [ /* ... */ ],
+  ConsiderationItem: [ /* ... */ ]
 };
 ```
 
-> **Note:** This SDK's `OrderParameters` is generic and driven by your EIP-712 schema. It is not the same as `@opensea/seaport-js`'s `OrderParameters`, which is Seaport-specific.
+> **Note:** SDK `OrderParameters` is generic and driven by your EIP-712 schema. It is not the same as `@opensea/seaport-js`'s `OrderParameters`.
 
 ## Test
 

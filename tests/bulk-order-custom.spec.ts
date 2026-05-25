@@ -1,3 +1,4 @@
+import { isBulkOrderSignature } from "../src/tree/Eip712MerkleTree";
 import { BulkOrder } from "../src";
 import { hashMessage, JsonRpcProvider, Wallet } from "ethers";
 import { providers, Wallet as WalletV5 } from "ethers-v5";
@@ -6,7 +7,7 @@ import assert from "assert";
 
 describe("Test Custom BulkOrder", () => {
   let signature_0 = "";
-  it("Sign Bulk Order base ethersv6", async () => {
+  it("Sign and Verify Bulk Order base ethersv6", async () => {
     const privateKey = process.env.PRIVATE_KEY as string;
     const provider = new JsonRpcProvider("https://1rpc.io/eth");
     const signer = new Wallet(privateKey, provider);
@@ -53,9 +54,27 @@ describe("Test Custom BulkOrder", () => {
     );
     const ordersWithSignature = await bulkOrder.signBulkOrder(orderComponents);
     signature_0 = ordersWithSignature[0].signature;
+
+    const isValid = await bulkOrder.verifyOrders(
+      ordersWithSignature,
+      signer.address
+    );
+    assert.equal(isValid, true);
+    const isValid_ = await bulkOrder.verifyOrder(
+      ordersWithSignature[0],
+      signer.address
+    );
+    assert.equal(isValid_, true);
+
+    const singleOrder = await bulkOrder.signOrder(orderComponents[0]);
+    assert.equal(
+      await bulkOrder.verifyOrder(singleOrder, signer.address),
+      true
+    );
+    assert.equal(isBulkOrderSignature(singleOrder.signature), false);
   });
 
-  it("Sign Bulk Order base ethersv5", async () => {
+  it("Sign and Verify Bulk Order base ethersv5", async () => {
     const privateKey = process.env.PRIVATE_KEY as string;
     const provider = new providers.JsonRpcProvider("https://1rpc.io/eth");
     const signer = new WalletV5(privateKey, provider);
@@ -100,6 +119,11 @@ describe("Test Custom BulkOrder", () => {
     const signature_1 = ordersWithSignature[0].signature;
 
     assert.equal(signature_0, signature_1);
+    const isValid = await bulkOrder.verifyOrders(
+      ordersWithSignature,
+      signer.address
+    );
+    assert.equal(isValid, true);
   });
 });
 // yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/bulk-order-custom.spec.ts
