@@ -3,8 +3,8 @@ import { JsonRpcProvider, Wallet } from "ethers";
 import { providers, Wallet as WalletV5 } from "ethers-v5";
 import "dotenv/config";
 import { Seaport } from "@opensea/seaport-js";
-import { Order } from "@opensea/seaport-js/lib/types";
-import { getOpenseaOrdersList } from "./example";
+import { Order, OrderComponents } from "@opensea/seaport-js/lib/types";
+import { getOpenseaOrdersList, SeaportOrderComponents } from "./example";
 import { equal } from "assert";
 
 describe("Test Opensea BulkOrder", () => {
@@ -23,20 +23,21 @@ describe("Test Opensea BulkOrder", () => {
     };
     // console.log(domainData);
 
-    const orders = getOpenseaOrdersList(signer.address);
+    const orderComponents = getOpenseaOrdersList(signer.address);
 
-    const EIP_712_BULK_ORDER_TYPE = EIP_712_BULK_ORDER_TYPE_DEMO;
-
-    const bulkOrder = new BulkOrder(signer, domainData);
-    const ordersWithSignature = await bulkOrder.signBulkOrder(
-      orders,
-      EIP_712_BULK_ORDER_TYPE
+    const bulkOrder = new BulkOrder<SeaportOrderComponents>(
+      signer,
+      domainData,
+      EIP_712_BULK_ORDER_TYPE_DEMO
     );
+    const ordersWithSignature = await bulkOrder.signBulkOrder(orderComponents);
 
     // console.log(ordersWithSignature)
 
     // validate ordersWithSignature
-    const ordersWithSignature_opensea = await seaport.signBulkOrder(orders);
+    const ordersWithSignature_opensea = await seaport.signBulkOrder(
+      orderComponents as unknown as OrderComponents[]
+    );
 
     equal(
       ordersWithSignature[0].signature,
@@ -86,12 +87,15 @@ describe("Test Opensea BulkOrder", () => {
 
     const orders = getOpenseaOrdersList(signer.address);
 
-    const bulkOrder = new BulkOrder(signer as any, domainData);
-    const ordersWithSignature = await bulkOrder.signBulkOrder(
-      orders,
+    const bulkOrder = new BulkOrder<SeaportOrderComponents>(
+      signer as any,
+      domainData,
       EIP_712_BULK_ORDER_TYPE_DEMO
     );
+    const ordersWithSignature = await bulkOrder.signBulkOrder(orders);
 
     equal(ordersWithSignature[0].signature, signature_0);
   });
 });
+
+// yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/bulk-order-opensea.spec.ts

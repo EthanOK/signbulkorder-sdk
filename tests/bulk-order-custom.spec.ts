@@ -18,7 +18,7 @@ describe("Test Custom BulkOrder", () => {
       verifyingContract: "0x0000000000000068F116a894984e2DB1123eB395"
     };
 
-    const orders = [];
+    const orderComponents = [];
 
     for (let i = 1; i <= 3; i++) {
       const order = {
@@ -26,7 +26,7 @@ describe("Test Custom BulkOrder", () => {
         message: hashMessage(i.toString()),
         account: signer.address
       };
-      orders.push(order);
+      orderComponents.push(order);
     }
 
     const EIP_712_BULK_ORDER_TYPE = {
@@ -40,11 +40,18 @@ describe("Test Custom BulkOrder", () => {
       ]
     };
 
-    const bulkOrder = new BulkOrder(signer, domainData);
-    const ordersWithSignature = await bulkOrder.signBulkOrder(
-      orders,
+    type CustomOrderComponents = {
+      number: number;
+      message: string;
+      account: string;
+    };
+
+    const bulkOrder = new BulkOrder<CustomOrderComponents>(
+      signer,
+      domainData,
       EIP_712_BULK_ORDER_TYPE
     );
+    const ordersWithSignature = await bulkOrder.signBulkOrder(orderComponents);
     signature_0 = ordersWithSignature[0].signature;
   });
 
@@ -60,7 +67,7 @@ describe("Test Custom BulkOrder", () => {
       verifyingContract: "0x0000000000000068F116a894984e2DB1123eB395"
     };
 
-    const orders = [];
+    const orderComponents = [];
 
     for (let i = 1; i <= 3; i++) {
       const order = {
@@ -69,7 +76,7 @@ describe("Test Custom BulkOrder", () => {
         account: signer.address
       };
 
-      orders.push(order);
+      orderComponents.push(order);
     }
 
     const EIP_712_BULK_ORDER_TYPE = {
@@ -83,12 +90,16 @@ describe("Test Custom BulkOrder", () => {
       ]
     };
 
-    const bulkOrder = new BulkOrder(signer as any, domainData);
-    const ordersWithSignature = await bulkOrder.signBulkOrder(
-      orders,
+    const bulkOrder = new BulkOrder(
+      signer as any,
+      domainData,
       EIP_712_BULK_ORDER_TYPE
     );
+    const ordersWithSignature = await bulkOrder.signBulkOrder(orderComponents);
 
-    assert.equal(signature_0, ordersWithSignature[0].signature);
+    const signature_1 = ordersWithSignature[0].signature;
+
+    assert.equal(signature_0, signature_1);
   });
 });
+// yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/bulk-order-custom.spec.ts
